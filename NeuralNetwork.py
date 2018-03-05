@@ -1,95 +1,169 @@
 import random
 import math
+
 class node:
-    def __init__(self, value=None):
-        self.theta = None
+    def __init__(self, layer):
+        self.layer = layer
         self.connections = {}
-        self.FFvalue = value
-        self.layer = None
+        self.bias = random.uniform(-0.5, 0.5)
+        self.output = None
         self.errDrv = None
-    def calcFFvalue(self):
-        netInput = 0
+
+    def calcOutput(self):
+        if self.layer.isInput():
+            return self.output
+
+        netInput = self.bias
         for node in self.layer.previousLayer.nodes:
-            netInput += node.FFvalue * node.connections[self]
-        netInput += self.theta
-        self.FFvalue = self.sigmoid(netInput)
-        return self.FFvalue
-    def updateThetas(self):
-        self.theta = self.theta + self.errDrv
-        for node, weight in self.connections.items():
-            self.connections[node] = weight + node.errDrv * self.FFvalue
-    def calcOutputErrDrv(self, trueValue):
-        self.errDrv = self.FFvalue * (1 - self.FFvalue) * (trueValue - self.FFvalue)
-        return self.errDrv
+            netInput += node.output * node.connections[self]
+
+        self.output = 1 / (1 + math.exp(-netInput)) # sigmoid function
+        return self.output
+
     def calcErrDrv(self):
+        if self.layer.isOutput():
+            return None
+
         errDrvSum = 0
         for node, weight in self.connections.items():
             errDrvSum += node.errDrv * weight
-        self.errDrv = self.FFvalue * (1 - self.FFvalue) * errDrvSum
+
+        self.errDrv = self.output * (1 - self.output) * errDrvSum
         return self.errDrv
-    def sigmoid(self, netInput):
-        return 1 / (1 + math.exp(-netInput))
+
+    def calcTrueErrDrv(self, trueValue):
+        self.errDrv = self.output * (1 - self.output) * (trueValue - self.output)
+        return self.errDrv
+
+    def updateWeights(self):
+        self.bias += self.errDrv
+        for node, weight in self.connections.items():
+            self.connections[node] = weight + node.errDrv * self.output
+
+    def visualize(self):
+        if self.errDrv == None:
+            self.errDrv = 0
+        print("Output: {0:.2f}, Bias: {1:.2f}, ErrDrv {2:.2f}".format(self.output, self.bias, self.errDrv))
+
+
 class layer:
-    def __init__(self, nodes, nextLayer):
-        self.nodes = nodes
-        self.nextLayer = nextLayer
+    def __init__(self, numNodes):
+        self.nodes = []
+        for i in range(numNodes):
+            self.nodes.append(node(self))
+        self.nextLayer = None
         self.previousLayer = None
-        for node in nodes:
-            node.layer = self
-            node.theta = random.uniform(-0.5, 0.5)
-            if not self.isOutput():
-                for nextNode in nextLayer.nodes:
-                    node.connections[nextNode] = random.uniform(-0.5, 0.5)
-    def isOutput(self):
-        return self.nextLayer == None
-    def isInput(self):
-        return self.previousLayer == None
-    def updateThetas(self):
+
+    def connect(self, nextLayer):
+        self.nextLayer = nextLayer
+        nextLayer.previousLayer = self
         for node in self.nodes:
-            node.updateThetas()
+            for nextNode in nextLayer.nodes:
+                node.connections[nextNode] = random.uniform(-0.5, 0.5)
+
+    def calcOutputs(self):
+        if self.isInput():
+            return
+        for node in self.nodes:
+            node.calcOutput()
+
     def calcErrDrv(self):
         if self.isOutput():
             return
         for node in self.nodes:
             node.calcErrDrv()
-    def calcFFvalues(self):
-        if self.isInput():
-            return
+
+    def updateWeights(self):
         for node in self.nodes:
-            node.calcFFvalue()
+            node.updateWeights()
+
+    def isOutput(self):
+        return self.nextLayer == None
+
+    def isInput(self):
+        return self.previousLayer == None
+
+    def index(self):
+        if self.prevLayer == None:
+            return 0
+        else:
+            return self.prevLayer.index() + 1
+
+    def visualize(self):
+        print("Layer {} :".format(self.index()))
+        for node in self.nodes:
+            node.visualize()
+
+
 class network:
-    def __init__(self):
-        self.outputLayer = layer([node(), node()], None)
-        self.hiddenLayer = layer([node(), node()], self.outputLayer)
-        self.outputLayer.previousLayer = self.hiddenLayer
-        self.inputLayer = layer([node(), node()], self.hiddenLayer)
-        self.hiddenLayer.previousLayer = self.inputLayer
-    def forwardProp(self, inputs):
-        self.inputLayer.nodes[0].FFvalue = inputs[0]
-        self.inputLayer.nodes[1].FFvalue = inputs[1]
-        self.hiddenLayer.calcFFvalues()
-        self.outputLayer.calcFFvalues()
-        return [self.outputLayer.nodes[0].FFvalue, self.outputLayer.nodes[1].FFvalue]
-    def backProp(self, outputs):
-        self.outputLayer.nodes[0].calcOutputErrDrv(outputs[0])
-        self.outputLayer.nodes[1].calcOutputErrDrv(outputs[1])
-        self.outputLayer.updateThetas()
-        self.hiddenLayer.calcErrDrv()
-        self.hiddenLayer.updateThetas()
-        self.inputLayer.calcErrDrv()
-        self.inputLayer.updateThetas()
+    def __init__(self, numFeatures, numClassifications, numHiddenLayers, numHiddenNodes):
+        self.debug = False
+        self.layers = []
+        #input layer
+        self.addLayer(numFeatures)
+        #hidden layers
+        for i in range(numHiddenLayers):
+            self.addLayer(numHiddenNodes)
+        #output layer
+        self.addLayer(numClassifications)
+
+
+    def addLayer(self, numNodes):
+        newLayer = layer(numNodes)
+        if len(self.layers) > 0:
+            prevLayer = self.layers[-1]
+            prevLayer.connect(newLayer)
+        self.layers.append(newLayer)
+
     def train(self, inputs, outputs):
         for i in range(0, len(inputs)):
             self.forwardProp(inputs[i])
             self.backProp(outputs[i])
+        if self.debug:
+            self.visualize()
+
+    def test(self, inputs, outputs):
+        numSuccesses = 0
+        for i in range(0, len(inputs)):
+            results = self.forwardProp(inputs[i])
+            if results.index(max(results)) == outputs[i].index(max(outputs[i])):
+                numSuccesses += 1
+        print("Accuracy:   {0:.1f}%   ".format(numSuccesses / len(inputs) * 100))
+
+    def forwardProp(self, inputs):
+        for i in range(len(inputs)):
+            self.layers[0].nodes[i].output = inputs[i]
+
+        for i in range(1,len(self.layers)):
+            self.layers[i].calcOutputs()
+
+        output = []
+        for i in range(len(self.layers[-1].nodes)):
+            output.append(self.layers[-1].nodes[i].output)
+        return output
+
+    def backProp(self, outputs):
+        for i in range(len(outputs)):
+            self.layers[-1].nodes[i].calcTrueErrDrv(outputs[i])
+        self.layers[-1].updateWeights()
+
+        for i in range(len(self.layers) - 2, -1, -1):
+            self.layers[i].calcErrDrv()
+            self.layers[i].updateWeights()
+
+    def visualize(self):
+        for layer in self.layers:
+            layer.visualize()
+        print()
+
+
+
 if __name__ == "__main__":
-    net = network()
+    net = network(2,2,1,2)
     inputs = [[0, 0], [0, 1], [1, 0], [1, 1]]
     outputs = [[0, 1], [1, 0], [1, 0], [0, 1]]
+
     for i in range(0, 1000):
         net.train(inputs, outputs)
-    for i in range(0, len(inputs)):
-        results = net.forwardProp(inputs[i])
-        print("result:   {1:.1f}% {0}  ".format(results[0] > results[1], 100*max(results)))
-        print("expected: {0}".format(outputs[i][0] > outputs[i][1]))
-        print()
+
+    net.test(inputs,outputs)
