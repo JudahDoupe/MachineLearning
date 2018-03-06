@@ -179,7 +179,7 @@ if __name__ == "__main__":
     testingInputs = testingData.inputs()
     testingOutputs = testingData.outputs()
 
-    for i in range(0, 1):
+    for i in range(0, 1000):
         net.train(trainingInputs, trainingOutputs)
 
     net.test(testingInputs, testingOutputs)

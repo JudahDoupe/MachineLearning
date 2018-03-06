@@ -25,14 +25,15 @@ class NormalizedData:
                 self.documentation = line
             else:
                 features = line.split(delimiter)
+                [float(i) for i in features]
                 self.data.append(features)
             lineNum += 1
 
         self.normalize()
 
     def normalize(self):
-        mins = [sys.maxint] * self.numFeatures
-        maxs = [-sys.maxint] * self.numFeatures
+        mins = [sys.maxsize] * self.numFeatures
+        maxs = [-sys.maxsize] * self.numFeatures
         means = [0] * self.numFeatures
 
         for line in self.data:
@@ -57,14 +58,14 @@ class NormalizedData:
     def inputs(self):
         inputs = []
         for line in self.data:
-            inputs.append(line[:self.numFeatures])
+            inputs.append(line[self.numNonDataItems:self.numFeatures + self.numNonDataItems])
         return inputs
 
     def outputs(self):
         outputs = []
         for line in self.data:
             output = [0] * self.numClassifications
-            output[line[-1]] = 1
+            output[int(line[-1])] = 1
             outputs.append(output)
         return outputs
 
