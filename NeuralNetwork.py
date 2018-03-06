@@ -1,7 +1,9 @@
 import random
 import math
+from NormalizedData import *
 
-class node:
+
+class Node:
     def __init__(self, layer):
         self.layer = layer
         self.connections = {}
@@ -17,7 +19,7 @@ class node:
         for node in self.layer.previousLayer.nodes:
             netInput += node.output * node.connections[self]
 
-        self.output = 1 / (1 + math.exp(-netInput)) # sigmoid function
+        self.output = 1 / (1 + math.exp(-netInput))  # sigmoid function
         return self.output
 
     def calcErrDrv(self):
@@ -46,11 +48,11 @@ class node:
         print("Output: {0:.2f}, Bias: {1:.2f}, ErrDrv {2:.2f}".format(self.output, self.bias, self.errDrv))
 
 
-class layer:
+class Layer:
     def __init__(self, numNodes):
         self.nodes = []
         for i in range(numNodes):
-            self.nodes.append(node(self))
+            self.nodes.append(Node(self))
         self.nextLayer = None
         self.previousLayer = None
 
@@ -84,10 +86,10 @@ class layer:
         return self.previousLayer == None
 
     def index(self):
-        if self.prevLayer == None:
+        if self.previousLayer == None:
             return 0
         else:
-            return self.prevLayer.index() + 1
+            return self.previousLayer.index() + 1
 
     def visualize(self):
         print("Layer {} :".format(self.index()))
@@ -95,21 +97,20 @@ class layer:
             node.visualize()
 
 
-class network:
+class Network:
     def __init__(self, numFeatures, numClassifications, numHiddenLayers, numHiddenNodes):
         self.debug = False
         self.layers = []
-        #input layer
+        # input layer
         self.addLayer(numFeatures)
-        #hidden layers
+        # hidden layers
         for i in range(numHiddenLayers):
             self.addLayer(numHiddenNodes)
-        #output layer
+        # output layer
         self.addLayer(numClassifications)
 
-
     def addLayer(self, numNodes):
-        newLayer = layer(numNodes)
+        newLayer = Layer(numNodes)
         if len(self.layers) > 0:
             prevLayer = self.layers[-1]
             prevLayer.connect(newLayer)
@@ -134,7 +135,7 @@ class network:
         for i in range(len(inputs)):
             self.layers[0].nodes[i].output = inputs[i]
 
-        for i in range(1,len(self.layers)):
+        for i in range(1, len(self.layers)):
             self.layers[i].calcOutputs()
 
         output = []
@@ -157,13 +158,28 @@ class network:
         print()
 
 
-
 if __name__ == "__main__":
-    net = network(2,2,1,2)
-    inputs = [[0, 0], [0, 1], [1, 0], [1, 1]]
-    outputs = [[0, 1], [1, 0], [1, 0], [0, 1]]
 
-    for i in range(0, 1000):
-        net.train(inputs, outputs)
+    trainingFile = input("Training Data Filename: ")
+    trainingDelimiter = input("Delimiter: ")
+    trainingData = NormalizedData(trainingFile, trainingDelimiter)
+    
+    testingFile = input("Testing Data Filename: ")
+    testingDelimiter = input("Delimiter: ")
+    testingData = NormalizedData(testingFile, testingDelimiter)
 
-    net.test(inputs,outputs)
+    net = Network(trainingData.numFeatures,
+                  trainingData.numClassifications,
+                  1,
+                  math.floor(trainingData.numFeatures * 1.5))
+    
+    trainingInputs = trainingData.inputs()
+    trainingOutputs = trainingData.outputs()
+
+    testingInputs = testingData.inputs()
+    testingOutputs = testingData.outputs()
+
+    for i in range(0, 1):
+        net.train(trainingInputs, trainingOutputs)
+
+    net.test(testingInputs, testingOutputs)
