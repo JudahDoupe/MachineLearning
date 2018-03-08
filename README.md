@@ -1,6 +1,6 @@
 # MachineLearning
 
-##Todo
+## Todo
 * ~~learning rate~~
 * Regularization
 * ~~Implement Cost Function~~
