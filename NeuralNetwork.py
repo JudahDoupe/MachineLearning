@@ -1,6 +1,8 @@
 import random
 import math
 from NormalizedData import *
+import numpy as np
+import matplotlib.pyplot as plt
 
 
 class Node:
@@ -99,7 +101,7 @@ class Layer:
 
 
 class Network:
-    def __init__(self, numFeatures, numClassifications, numHiddenLayers, numHiddenNodes, learningRate = 1):
+    def __init__(self, numFeatures, numClassifications, numHiddenLayers, numHiddenNodes, learningRate=1):
         self.debug = False
         self.layers = []
         # input layer
@@ -110,6 +112,10 @@ class Network:
         # output layer
         self.addLayer(numClassifications)
         self.learningRate = learningRate
+        self.costs = [0]
+        self.costsXAxis = [0]
+        self.costFigure, self.costAxes = plt.subplots()
+
 
     def addLayer(self, numNodes):
         newLayer = Layer(numNodes, self)
@@ -119,11 +125,37 @@ class Network:
         self.layers.append(newLayer)
 
     def train(self, inputs, outputs):
+        sumCost = 0
         for i in range(0, len(inputs)):
             self.forwardProp(inputs[i])
             self.backProp(outputs[i])
+
+            for node in self.layers[-1].nodes:
+                sumCost += node.errDrv
+
+
         if self.debug:
+            self.normalCostGraph(sumCost, inputs)
+            # self.judahsCoolGraph(sumCost, inputs)
+
+    def normalCostGraph(self, sumCost, inputs):
+        self.costs.append(abs(sumCost / len(inputs)))
+        self.costsXAxis.append(len(self.costs))
+
+        if len(self.costs) % 50 == 0:
             self.visualize()
+
+    def judahsCoolGraph(self, sumCost, inputs):
+        self.costs.append(abs(sumCost / len(inputs)))
+        self.costsXAxis.append(self.costsXAxis[-1] + 1)
+
+        if len(self.costs) > 100:
+            self.costs.pop(0)
+            self.costsXAxis.pop(0)
+
+        if len(self.costs) % 10 == 0:
+            self.visualize()
+
 
     def test(self, inputs, outputs):
         numSuccesses = 0
@@ -154,27 +186,37 @@ class Network:
             self.layers[i].calcErrDrv()
             self.layers[i].updateWeights()
 
+
     def visualize(self):
-        for layer in self.layers:
-            layer.visualize()
-        print()
+
+        self.costFigure.show()
+        x = np.array(self.costsXAxis)
+        y = np.array(self.costs)
+        self.costAxes.clear()
+        self.costAxes.plot(x, y, color='blue')
+        self.costFigure.canvas.draw()
 
 
 if __name__ == "__main__":
 
-    trainingFile = input("Training Data Filename: ")
-    trainingDelimiter = input("Delimiter: ")
+    # trainingFile = input("Training Data Filename: ")
+    trainingFile = 'fishersIris.txt'
+    # trainingDelimiter = input("Delimiter: ")
+    trainingDelimiter =','
     trainingData = NormalizedData(trainingFile, trainingDelimiter)
-    
-    testingFile = input("Testing Data Filename: ")
-    testingDelimiter = input("Delimiter: ")
+
+    # testingFile = input("Testing Data Filename: ")
+    testingFile = 'fishersIris.txt'
+    # testingDelimiter = input("Delimiter: ")
+    testingDelimiter = ','
     testingData = NormalizedData(testingFile, testingDelimiter)
 
     net = Network(trainingData.numFeatures,
                   trainingData.numClassifications,
                   1,
                   math.floor(trainingData.numFeatures * 1.5))
-    
+
+    net.debug = True
     trainingInputs = trainingData.inputs()
     trainingOutputs = trainingData.outputs()
 
