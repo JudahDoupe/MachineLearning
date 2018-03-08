@@ -38,9 +38,9 @@ class Node:
         return self.errDrv
 
     def updateWeights(self):
-        self.bias += self.errDrv
+        self.bias += self.errDrv * self.layer.network.learningRate
         for node, weight in self.connections.items():
-            self.connections[node] = weight + node.errDrv * self.output
+            self.connections[node] = weight + node.errDrv * self.output * self.layer.network.learningRate
 
     def visualize(self):
         if self.errDrv == None:
@@ -49,12 +49,13 @@ class Node:
 
 
 class Layer:
-    def __init__(self, numNodes):
+    def __init__(self, numNodes, network):
         self.nodes = []
         for i in range(numNodes):
             self.nodes.append(Node(self))
         self.nextLayer = None
         self.previousLayer = None
+        self.network = network
 
     def connect(self, nextLayer):
         self.nextLayer = nextLayer
@@ -98,7 +99,7 @@ class Layer:
 
 
 class Network:
-    def __init__(self, numFeatures, numClassifications, numHiddenLayers, numHiddenNodes):
+    def __init__(self, numFeatures, numClassifications, numHiddenLayers, numHiddenNodes, learningRate = 1):
         self.debug = False
         self.layers = []
         # input layer
@@ -108,9 +109,10 @@ class Network:
             self.addLayer(numHiddenNodes)
         # output layer
         self.addLayer(numClassifications)
+        self.learningRate = learningRate
 
     def addLayer(self, numNodes):
-        newLayer = Layer(numNodes)
+        newLayer = Layer(numNodes, self)
         if len(self.layers) > 0:
             prevLayer = self.layers[-1]
             prevLayer.connect(newLayer)
