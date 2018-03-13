@@ -116,7 +116,6 @@ class Network:
         self.costsXAxis = [0]
         self.costFigure, self.costAxes = plt.subplots()
 
-
     def addLayer(self, numNodes):
         newLayer = Layer(numNodes, self)
         if len(self.layers) > 0:
@@ -124,19 +123,24 @@ class Network:
             prevLayer.connect(newLayer)
         self.layers.append(newLayer)
 
-    def train(self, inputs, outputs):
-        sumCost = 0
-        for i in range(0, len(inputs)):
-            self.forwardProp(inputs[i])
-            self.backProp(outputs[i])
+    def train(self, inputs, outputs, maxIters=10000, threshold=.00001):
 
-            for node in self.layers[-1].nodes:
-                sumCost += node.errDrv
+        sumCost = 1
+        countIters = 0
+        while countIters < maxIters and abs(sumCost / len(inputs)) > threshold:
+            sumCost = 0
 
+            for i in range(0, len(inputs)):
+                self.forwardProp(inputs[i])
+                self.backProp(outputs[i])
 
-        if self.debug:
-            #self.normalCostGraph(sumCost, inputs)
-            self.judahsCoolGraph(sumCost, inputs)
+                for node in self.layers[-1].nodes:
+                    sumCost += node.errDrv
+
+            countIters += 1
+            if self.debug:
+                self.normalCostGraph(sumCost, inputs)
+                # self.judahsCoolGraph(sumCost, inputs)
 
     def normalCostGraph(self, sumCost, inputs):
         self.costs.append(abs(sumCost / len(inputs)))
@@ -155,7 +159,6 @@ class Network:
 
         if len(self.costs) % 10 == 0:
             self.visualize()
-
 
     def test(self, inputs, outputs):
         numSuccesses = 0
@@ -188,7 +191,6 @@ class Network:
             self.layers[i].calcErrDrv()
             self.layers[i].updateWeights()
 
-
     def visualize(self):
 
         self.costFigure.show()
@@ -200,9 +202,8 @@ class Network:
 
 
 if __name__ == "__main__":
-
     fileName = 'fishersIris.txt'
-    fileDelimiter =','
+    fileDelimiter = ','
     data = NormalizedData(fileName, fileDelimiter)
 
     trainingIn, trainingOut = data.trainingData()
@@ -216,8 +217,7 @@ if __name__ == "__main__":
 
     net.debug = True
 
-    for i in range(0, 1000):
-        net.train(trainingIn, trainingOut)
+    net.train(trainingIn, trainingOut)
 
     net.test(crossValidationIn, crossValidationOut)
     net.test(testingIn, testingOut)
