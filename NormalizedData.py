@@ -1,5 +1,6 @@
 import sys
-
+import random
+import math
 
 class NormalizedData:
     def __init__(self, fileName, delimiter):
@@ -30,6 +31,9 @@ class NormalizedData:
             lineNum += 1
 
         self.normalize()
+        random.shuffle(self.data)
+        self.inputs = self.inputs()
+        self.outputs = self.outputs()
 
     def normalize(self):
         mins = [sys.maxsize] * self.numFeatures
@@ -68,6 +72,16 @@ class NormalizedData:
             output[int(line[-1])] = 1
             outputs.append(output)
         return outputs
+
+    def trainingData(self):
+        return self.inputs[:math.floor(len(self.inputs) * 0.6)], self.outputs[:math.floor(len(self.outputs) * 0.6)]
+
+    def crossValidationData(self):
+        return self.inputs[math.floor(len(self.inputs) * 0.6):math.floor(len(self.inputs) * 0.8)],\
+               self.outputs[math.floor(len(self.outputs) * 0.6):math.floor(len(self.outputs) * 0.8)]
+
+    def testingData(self):
+        return self.inputs[math.floor(len(self.inputs) * 0.8):], self.outputs[math.floor(len(self.outputs) * 0.8):]
 
     def saveData(self):
 

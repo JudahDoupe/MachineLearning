@@ -135,8 +135,8 @@ class Network:
 
 
         if self.debug:
-            self.normalCostGraph(sumCost, inputs)
-            # self.judahsCoolGraph(sumCost, inputs)
+            #self.normalCostGraph(sumCost, inputs)
+            self.judahsCoolGraph(sumCost, inputs)
 
     def normalCostGraph(self, sumCost, inputs):
         self.costs.append(abs(sumCost / len(inputs)))
@@ -163,7 +163,9 @@ class Network:
             results = self.forwardProp(inputs[i])
             if results.index(max(results)) == outputs[i].index(max(outputs[i])):
                 numSuccesses += 1
-        print("Accuracy:   {0:.1f}%   ".format(numSuccesses / len(inputs) * 100))
+        accuracy = numSuccesses / len(inputs) * 100
+        print("Accuracy:   {0:.1f}%   ".format(accuracy))
+        return accuracy
 
     def forwardProp(self, inputs):
         for i in range(len(inputs)):
@@ -199,31 +201,23 @@ class Network:
 
 if __name__ == "__main__":
 
-    # trainingFile = input("Training Data Filename: ")
-    trainingFile = 'fishersIris.txt'
-    # trainingDelimiter = input("Delimiter: ")
-    trainingDelimiter =','
-    trainingData = NormalizedData(trainingFile, trainingDelimiter)
+    fileName = 'fishersIris.txt'
+    fileDelimiter =','
+    data = NormalizedData(fileName, fileDelimiter)
 
-    # testingFile = input("Testing Data Filename: ")
-    testingFile = 'fishersIris.txt'
-    # testingDelimiter = input("Delimiter: ")
-    testingDelimiter = ','
-    testingData = NormalizedData(testingFile, testingDelimiter)
+    trainingIn, trainingOut = data.trainingData()
+    crossValidationIn, crossValidationOut = data.crossValidationData()
+    testingIn, testingOut = data.testingData()
 
-    net = Network(trainingData.numFeatures,
-                  trainingData.numClassifications,
+    net = Network(data.numFeatures,
+                  data.numClassifications,
                   1,
-                  math.floor(trainingData.numFeatures * 1.5))
+                  math.floor(data.numFeatures * 1.5))
 
     net.debug = True
-    trainingInputs = trainingData.inputs()
-    trainingOutputs = trainingData.outputs()
-
-    testingInputs = testingData.inputs()
-    testingOutputs = testingData.outputs()
 
     for i in range(0, 1000):
-        net.train(trainingInputs, trainingOutputs)
+        net.train(trainingIn, trainingOut)
 
-    net.test(testingInputs, testingOutputs)
+    net.test(crossValidationIn, crossValidationOut)
+    net.test(testingIn, testingOut)
