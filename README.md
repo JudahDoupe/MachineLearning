@@ -4,6 +4,7 @@
 * ~~learning rate~~
 * Regularization
 * ~~Implement Cost Function~~
+* ~~Plot Cost function~~
 * ~~Add it data randomization and create cross validation dataset,test dataset~~
 * Threshold to stop training when cost gets small enough
 * Add in the 10 fold cross validation. 
