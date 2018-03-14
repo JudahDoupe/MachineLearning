@@ -10,7 +10,7 @@ class Node:
         self.connections = {}
         self.bias = random.uniform(-0.5, 0.5)
         self.output = None
-        self.errDrv = None
+        self.errDrv = 1
 
     def calcOutput(self):
         if self.layer.isInput():
@@ -111,9 +111,10 @@ class Network:
         # output layer
         self.addLayer(numClassifications)
         self.learningRate = learningRate
+        self.numHiddenLayers = numHiddenLayers
+        self.numHiddenNodes = numHiddenNodes
         self.costs = [0]
         self.costsXAxis = [0]
-        if self.debug: self.costFigure, self.costAxes = plt.subplots()
 
     def addLayer(self, numNodes):
         newLayer = Layer(numNodes, self)
@@ -122,42 +123,26 @@ class Network:
             prevLayer.connect(newLayer)
         self.layers.append(newLayer)
 
-    def train(self, inputs, outputs, maxIters=10000, threshold=.00001):
+    def train(self, inputs, outputs, maxIters=4000, threshold=.00001):
 
-        sumCost = 1
         countIters = 0
-        while countIters < maxIters and abs(sumCost / len(inputs)) > threshold:
-            sumCost = 0
-
+        while countIters < maxIters and self.calcCost() > threshold:
             for i in range(0, len(inputs)):
                 self.forwardProp(inputs[i])
                 self.backProp(outputs[i])
 
-                for node in self.layers[-1].nodes:
-                    sumCost += node.errDrv
-
             countIters += 1
-            if self.debug:
-                self.normalCostGraph(sumCost, inputs)
-                # self.judahsCoolGraph(sumCost, inputs)
+            self.storeCostGraphData()
 
-    def normalCostGraph(self, sumCost, inputs):
-        self.costs.append(abs(sumCost / len(inputs)))
+    def calcCost(self):
+        sumCost = 0
+        for node in self.layers[-1].nodes:
+            sumCost += node.errDrv
+        return abs(sumCost / len(self.layers[-1].nodes))
+
+    def storeCostGraphData(self):
+        self.costs.append(self.calcCost())
         self.costsXAxis.append(len(self.costs))
-
-        if len(self.costs) % 50 == 0:
-            self.visualize()
-
-    def judahsCoolGraph(self, sumCost, inputs):
-        self.costs.append(abs(sumCost / len(inputs)))
-        self.costsXAxis.append(self.costsXAxis[-1] + 1)
-
-        if len(self.costs) > 100:
-            self.costs.pop(0)
-            self.costsXAxis.pop(0)
-
-        if len(self.costs) % 10 == 0:
-            self.visualize()
 
     def test(self, inputs, outputs):
         numSuccesses = 0
@@ -189,12 +174,3 @@ class Network:
         for i in range(len(self.layers) - 2, -1, -1):
             self.layers[i].calcErrDrv()
             self.layers[i].updateWeights()
-
-    def visualize(self):
-
-        self.costFigure.show()
-        x = np.array(self.costsXAxis)
-        y = np.array(self.costs)
-        self.costAxes.clear()
-        self.costAxes.plot(x, y, color='blue')
-        self.costFigure.canvas.draw()
