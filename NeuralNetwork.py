@@ -1,6 +1,5 @@
 import random
 import math
-from NormalizedData import *
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -114,7 +113,7 @@ class Network:
         self.learningRate = learningRate
         self.costs = [0]
         self.costsXAxis = [0]
-        self.costFigure, self.costAxes = plt.subplots()
+        if self.debug: self.costFigure, self.costAxes = plt.subplots()
 
     def addLayer(self, numNodes):
         newLayer = Layer(numNodes, self)
@@ -167,7 +166,7 @@ class Network:
             if results.index(max(results)) == outputs[i].index(max(outputs[i])):
                 numSuccesses += 1
         accuracy = numSuccesses / len(inputs) * 100
-        print("Accuracy:   {0:.1f}%   ".format(accuracy))
+        if self.debug: print("Accuracy:   {0:.1f}%   ".format(accuracy))
         return accuracy
 
     def forwardProp(self, inputs):
@@ -199,25 +198,3 @@ class Network:
         self.costAxes.clear()
         self.costAxes.plot(x, y, color='blue')
         self.costFigure.canvas.draw()
-
-
-if __name__ == "__main__":
-    fileName = 'fishersIris.txt'
-    fileDelimiter = ','
-    data = NormalizedData(fileName, fileDelimiter)
-
-    trainingIn, trainingOut = data.trainingData()
-    crossValidationIn, crossValidationOut = data.crossValidationData()
-    testingIn, testingOut = data.testingData()
-
-    net = Network(data.numFeatures,
-                  data.numClassifications,
-                  1,
-                  math.floor(data.numFeatures * 1.5))
-
-    net.debug = True
-
-    net.train(trainingIn, trainingOut)
-
-    net.test(crossValidationIn, crossValidationOut)
-    net.test(testingIn, testingOut)

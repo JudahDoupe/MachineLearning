@@ -73,16 +73,6 @@ class NormalizedData:
             outputs.append(output)
         return outputs
 
-    def trainingData(self):
-        return self.inputs[:math.floor(len(self.inputs) * 0.6)], self.outputs[:math.floor(len(self.outputs) * 0.6)]
-
-    def crossValidationData(self):
-        return self.inputs[math.floor(len(self.inputs) * 0.6):math.floor(len(self.inputs) * 0.8)],\
-               self.outputs[math.floor(len(self.outputs) * 0.6):math.floor(len(self.outputs) * 0.8)]
-
-    def testingData(self):
-        return self.inputs[math.floor(len(self.inputs) * 0.8):], self.outputs[math.floor(len(self.outputs) * 0.8):]
-
     def saveData(self):
 
         file = open("normailzed_" + self.fileName, "w")
