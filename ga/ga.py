@@ -154,5 +154,5 @@ while avgFitness < (0.95 * int("1111111111111111",2) * int("1111111111111111",2)
     avgFitnesses.append(avgFitness)
 
 print("Generations to convergence {0}".format(generation))
-#FitnessGraph()
-#input("Press enter to close graph: ")
+FitnessGraph()
+input("Press enter to close graph: ")
