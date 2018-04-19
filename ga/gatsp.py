@@ -5,32 +5,30 @@ import matplotlib.patches as mpatches
 
 class GA:
 
-    def __init__(self, cityNames, cityDistances, crossoverRate, mutationRate, twoPointCrossover = True):
+    def __init__(self, cityNames, cityDistances, populationSize, crossoverRate, mutationRate, twoPointCrossover = True):
         self.cityNames = cityNames
         self.cityDistances = cityDistances
-
-        self.currentGen = []
-        self.nextGen = []
-        self.generation = 0
-        self.generations = []
-        self.avgFitness = 0
-        self.avgFitnesses = []
-        self.fitnesses = [[], []]
-        self.drawAllFitnesses = False
 
         self.mutationRate = mutationRate
         self.crossoverRate = crossoverRate
         self.twoPointCrossover = twoPointCrossover
-        self.populationSize = len(cityNames)
+        self.populationSize = populationSize
 
+        self.currentGen = []
+        self.nextGen = []
+        self.generation = 0
+
+        #graph stuff
+        self.generations = []
+        self.avgFitnesses = []
 
         for _ in range(self.populationSize):
-            self.currentGen.append(path())
+            self.currentGen.append(path(len(self.cityNames)))
 
-    def converge(self, fitnessPercent, maxGens = 10000):
-        while self.avgFitness < (fitnessPercent * int("1111111111111111", 2) * int("1111111111111111", 2)) or self.generation < maxGens:
-            self.avgFitness = 0
-            for _ in range(len(self.currentGen) // 2):
+    def converge(self, maxGens = 1000):
+        while self.generation < maxGens:
+            sumFitness = 0
+            for _ in range(self.populationSize // 2):
                 male = self.binaryTournament()
                 female = self.binaryTournament()
 
@@ -39,59 +37,63 @@ class GA:
                 baby1.mutate(self.mutationRate)
                 baby2.mutate(self.mutationRate)
 
-                self.nextGen.append(baby1)
-                self.nextGen.append(baby2)
-                self.avgFitness += baby1.fitness()
-                self.avgFitness += baby2.fitness()
-                self.fitnesses[0].append(self.generation)
-                self.fitnesses[1].append(baby2.fitness())
-                self.fitnesses[0].append(self.generation)
-                self.fitnesses[1].append(baby2.fitness())
-
-            self.avgFitness = self.avgFitness // len(self.nextGen)
+                self.nextGen = self.nextGen + [baby1, baby2]
+                sumFitness += baby1.fitness(self.cityDistances) + baby2.fitness(self.cityDistances)
 
             self.currentGen = self.nextGen
             self.nextGen = []
-
             self.generation += 1
             self.generations.append(self.generation)
-            self.avgFitnesses.append(self.avgFitness)
+            self.avgFitnesses.append(sumFitness // self.populationSize)
 
     def crossover(self, male, female):
         if self.crossoverRate < random.randrange(0, 100):
             return male, female
 
-        idxs = [random.randrange(0, 32), random.randrange(0, 32)]
+        idxs = [random.randrange(0, len(male.genes)), random.randrange(0, len(male.genes))]
 
+        #crossover
         if self.twoPointCrossover:
-            baby1 = male.genes[:min(idxs)] + female.genes[min(idxs):max(idxs)] + male.genes[max(idxs):]
-            baby2 = female.genes[:min(idxs)] + male.genes[min(idxs):max(idxs)] + female.genes[max(idxs):]
+            maleBaby = male.genes[:min(idxs)] + female.genes[min(idxs):max(idxs)] + male.genes[max(idxs):]
+            femaleBaby = female.genes[:min(idxs)] + male.genes[min(idxs):max(idxs)] + female.genes[max(idxs):]
         else:
-            baby1 = male.genes[:min(idxs)] + female.genes[min(idxs):]
-            baby2 = female.genes[:min(idxs)] + male.genes[min(idxs):]
+            maleBaby = male.genes[:min(idxs)] + female.genes[min(idxs):]
+            femaleBaby = female.genes[:min(idxs)] + male.genes[min(idxs):]
 
-        return path(baby1), path(baby2)
+        #repair
+        map = []
+        for i in range(min(idxs), max(idxs)):
+            map.append([male.genes[i], female.genes[i]])
+
+        for i in range(0, min(idxs)):
+            for j in range(len(map)):
+                if maleBaby[i] == map[j][1]:
+                    maleBaby[i] = map[j][0]
+                if femaleBaby[i] == map[j][0]:
+                    femaleBaby[i] = map[j][1]
+        if self.twoPointCrossover:
+            for i in range(max(idxs), len(male.genes)):
+                for j in range(len(map)):
+                    if maleBaby[i] == map[j][1] and maleBaby.count(maleBaby[i]) > 1:
+                        maleBaby[i] = map[j][0]
+                    if femaleBaby[i] == map[j][0] and femaleBaby.count(femaleBaby[i]) > 1:
+                        femaleBaby[i] = map[j][1]
+
+        return path(len(self.cityNames),maleBaby), path(len(self.cityNames),femaleBaby)
 
     def binaryTournament(self):
         candidate1, candidate2 = self.currentGen[random.randrange(0, len(self.currentGen))], \
                                  self.currentGen[random.randrange(0, len(self.currentGen))]
-        if candidate1.fitness() > candidate2.fitness():
-            winner = candidate1
+        if candidate1.fitness(self.cityDistances) > candidate2.fitness(self.cityDistances):
+            return candidate1
         else:
-            winner = candidate2
+            return candidate2
 
-        return winner
-
-    def FitnessGraph(self):
+    def displayGraph(self):
         x = np.array(self.generations)
         y = np.array(self.avgFitnesses)
         fig, axes = plt.subplots()
-        axes.set_ylim([-int("1111111111111111",2) * int("1111111111111111",2), int("1111111111111111",2) * int("1111111111111111",2)])
         axes.plot(x, y, color='blue')
-        if self.drawAllFitnesses:
-            axes.scatter(self.fitnesses[0],self.fitnesses[1])
-        fitnessPatch = mpatches.Patch(color='blue', label='Avg Fitness')
-        fig.legend(handles=[fitnessPatch])
         axes.set_xlabel('Generations')
         axes.set_ylabel('Fitness')
         fig.suptitle('GA')
@@ -104,20 +106,22 @@ class path:
 
     def __init__(self, numCities, genes=None):
         if not genes:
-            self.genes = self.initGenes(numCities)
+            self.initGenes(numCities)
         else:
             self.genes = genes
 
     def initGenes(self, numCities):
-        genes = []
+        self.genes = []
         for i in range(numCities):
-            genes.append(i)
-        return random.shuffle(genes)
+            self.genes.append(i)
+        random.shuffle(self.genes)
 
     def fitness(self, cityDistances):
         sum = 0
         for i in range(len(self.genes)):
-            sum += cityDistances[i][(i+1)%len(self.genes)]
+            city = self.genes[i]
+            nextCity = self.genes[(i+1)%len(self.genes)]
+            sum += cityDistances[city][nextCity]
         return sum
 
     def mutate(self, rate):
@@ -139,5 +143,6 @@ cityDistances = [[0  ,241,162,351,183],
                  [351,186,216,0  ,186],
                  [183,97 ,106,186,0  ]]
 
-test = GA(cityNames, cityDistances, 70, 10)
-test.converge(0.95)
+test = GA(cityNames, cityDistances, 20, 70, 10)
+test.converge(25)
+test.displayGraph()
