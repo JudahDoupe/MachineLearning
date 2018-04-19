@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
 mutationRate = 10
-crossoverRate = 50
+crossoverRate = 70
 twoPointCrossover = False
 populationSize = 50
 
@@ -95,7 +95,7 @@ def FitnessGraph():
     axes.set_xlabel('Generations')
     axes.set_ylabel('Fitness')
     fig.suptitle('GA')
-    fig.savefig('GA.png')
+    #fig.savefig('GA.png')
     fig.show()
     #plt.close(fig)
 
