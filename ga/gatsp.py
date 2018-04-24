@@ -55,19 +55,19 @@ class GA:
 
         idx = random.randrange(1,len(male.genes))
 
-        maleBaby = [-1] * len(male.genes)
-        femaleBaby = [-1] * len(male.genes)
+        maleBaby = [0] + ([-1] * (len(male.genes)-1))
+        femaleBaby = [0] + ([-1] * (len(male.genes)-1))
 
         for i in range(idx, len(male.genes)):
             maleBaby[i] = female.genes[i]
             femaleBaby[i] = male.genes[i]
 
-        for i in range(idx):
+        for i in range(1, idx):
             mGene = male.genes[i]
             while mGene in maleBaby:
                 mappedGene = male.genes[female.genes.index(male.genes[i])]
                 if mGene == mappedGene:
-                    mGene = random.randrange(0, len(male.genes))
+                    mGene = random.randrange(1, len(male.genes))
                 else:
                     mGene = mappedGene
             maleBaby[i] = mGene
@@ -76,13 +76,16 @@ class GA:
             while fGene in femaleBaby:
                 mappedGene = female.genes[male.genes.index(female.genes[i])]
                 if fGene == mappedGene:
-                    fGene = random.randrange(0, len(male.genes))
+                    fGene = random.randrange(1, len(male.genes))
                 else:
                     fGene = mappedGene
             femaleBaby[i] = fGene
 
         if len(femaleBaby) != len(set(femaleBaby)) or len(maleBaby) != len(set(maleBaby)):
             print("There was a duplicate value")
+
+        if maleBaby[0] != 0 or femaleBaby[0] != 0:
+            print("First city is not Houston")
 
         return path(len(self.cityNames), maleBaby), path(len(self.cityNames), femaleBaby)
 
@@ -117,10 +120,12 @@ class path:
             self.genes = genes
 
     def initGenes(self, numCities):
-        self.genes = []
-        for i in range(numCities):
-            self.genes.append(i)
-        random.shuffle(self.genes)
+        genes = []
+        for i in range(1,numCities):
+            genes.append(i)
+        random.shuffle(genes)
+        self.genes = [0] + genes
+
 
     def fitness(self, cityDistances):
         sum = 0
@@ -134,8 +139,8 @@ class path:
         if rate < random.randrange(0, 100):
             pass
 
-        chromosome1 = random.randrange(0, len(self.genes))
-        chromosome2 = random.randrange(0, len(self.genes))
+        chromosome1 = random.randrange(1, len(self.genes))
+        chromosome2 = random.randrange(1, len(self.genes))
 
         tmp = self.genes[chromosome1]
         self.genes[chromosome1] = self.genes[chromosome2]
