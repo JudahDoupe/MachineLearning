@@ -3,9 +3,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
+
 class GA:
 
-    def __init__(self, cityNames, cityDistances, populationSize, crossoverRate, mutationRate, twoPointCrossover = True):
+    def __init__(self, cityNames, cityDistances, populationSize, crossoverRate, mutationRate, twoPointCrossover=False):
         self.cityNames = cityNames
         self.cityDistances = cityDistances
 
@@ -18,14 +19,14 @@ class GA:
         self.nextGen = []
         self.generation = 0
 
-        #graph stuff
+        # graph stuff
         self.generations = []
         self.avgFitnesses = []
 
         for _ in range(self.populationSize):
             self.currentGen.append(path(len(self.cityNames)))
 
-    def converge(self, maxGens = 1000):
+    def converge(self, maxGens=1000):
         while self.generation < maxGens:
             sumFitness = 0
             for _ in range(self.populationSize // 2):
@@ -36,6 +37,8 @@ class GA:
 
                 baby1.mutate(self.mutationRate)
                 baby2.mutate(self.mutationRate)
+                # print(baby1.genes)
+                # print(baby2.genes)
 
                 self.nextGen = self.nextGen + [baby1, baby2]
                 sumFitness += baby1.fitness(self.cityDistances) + baby2.fitness(self.cityDistances)
@@ -50,36 +53,38 @@ class GA:
         if self.crossoverRate < random.randrange(0, 100):
             return male, female
 
-        idxs = [random.randrange(0, len(male.genes)), random.randrange(0, len(male.genes))]
+        idx = random.randrange(1,len(male.genes))
 
-        #crossover
-        if self.twoPointCrossover:
-            maleBaby = male.genes[:min(idxs)] + female.genes[min(idxs):max(idxs)] + male.genes[max(idxs):]
-            femaleBaby = female.genes[:min(idxs)] + male.genes[min(idxs):max(idxs)] + female.genes[max(idxs):]
-        else:
-            maleBaby = male.genes[:min(idxs)] + female.genes[min(idxs):]
-            femaleBaby = female.genes[:min(idxs)] + male.genes[min(idxs):]
+        maleBaby = [-1] * len(male.genes)
+        femaleBaby = [-1] * len(male.genes)
 
-        #repair
-        map = []
-        for i in range(min(idxs), max(idxs)):
-            map.append([male.genes[i], female.genes[i]])
+        for i in range(idx, len(male.genes)):
+            maleBaby[i] = female.genes[i]
+            femaleBaby[i] = male.genes[i]
 
-        for i in range(0, min(idxs)):
-            for j in range(len(map)):
-                if maleBaby[i] == map[j][1]:
-                    maleBaby[i] = map[j][0]
-                if femaleBaby[i] == map[j][0]:
-                    femaleBaby[i] = map[j][1]
-        if self.twoPointCrossover:
-            for i in range(max(idxs), len(male.genes)):
-                for j in range(len(map)):
-                    if maleBaby[i] == map[j][1] and maleBaby.count(maleBaby[i]) > 1:
-                        maleBaby[i] = map[j][0]
-                    if femaleBaby[i] == map[j][0] and femaleBaby.count(femaleBaby[i]) > 1:
-                        femaleBaby[i] = map[j][1]
+        for i in range(idx):
+            mGene = male.genes[i]
+            while mGene in maleBaby:
+                mappedGene = male.genes[female.genes.index(male.genes[i])]
+                if mGene == mappedGene:
+                    mGene = random.randrange(0, len(male.genes))
+                else:
+                    mGene = mappedGene
+            maleBaby[i] = mGene
 
-        return path(len(self.cityNames),maleBaby), path(len(self.cityNames),femaleBaby)
+            fGene = female.genes[i]
+            while fGene in femaleBaby:
+                mappedGene = female.genes[male.genes.index(female.genes[i])]
+                if fGene == mappedGene:
+                    fGene = random.randrange(0, len(male.genes))
+                else:
+                    fGene = mappedGene
+            femaleBaby[i] = fGene
+
+        if len(femaleBaby) != len(set(femaleBaby)) or len(maleBaby) != len(set(maleBaby)):
+            print("There was a duplicate value")
+
+        return path(len(self.cityNames), maleBaby), path(len(self.cityNames), femaleBaby)
 
     def binaryTournament(self):
         candidate1, candidate2 = self.currentGen[random.randrange(0, len(self.currentGen))], \
@@ -102,6 +107,7 @@ class GA:
         input("Press enter to close graph: ")
         plt.close(fig)
 
+
 class path:
 
     def __init__(self, numCities, genes=None):
@@ -120,7 +126,7 @@ class path:
         sum = 0
         for i in range(len(self.genes)):
             city = self.genes[i]
-            nextCity = self.genes[(i+1)%len(self.genes)]
+            nextCity = self.genes[(i + 1) % len(self.genes)]
             sum += cityDistances[city][nextCity]
         return sum
 
@@ -136,13 +142,13 @@ class path:
         self.genes[chromosome2] = tmp
 
 
-cityNames =["Houston","Dallas","Austin","Abilene","Waco"]
-cityDistances = [[0  ,241,162,351,183],
-                 [241,0  ,202,186,97 ],
-                 [162,202,0  ,216,106],
-                 [351,186,216,0  ,186],
-                 [183,97 ,106,186,0  ]]
+cityNames = ["Houston", "Dallas", "Austin", "Abilene", "Waco"]
+cityDistances = [[0, 241, 162, 351, 183],
+                 [241, 0, 202, 186, 97],
+                 [162, 202, 0, 216, 106],
+                 [351, 186, 216, 0, 186],
+                 [183, 97, 106, 186, 0]]
 
-test = GA(cityNames, cityDistances, 20, 70, 10)
-test.converge(25)
+test = GA(cityNames, cityDistances, 50, 70, 1)
+test.converge(1000)
 test.displayGraph()
