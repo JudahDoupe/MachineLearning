@@ -2,12 +2,49 @@ import random
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
+import math
+import sys
+import time
+
+
+
+def processTour(fileName, numPreLines):
+    infile = open(fileName, "r")
+    dataD = {}
+    listData = []
+    for i in range(numPreLines):
+        infile.readline()
+    for line in infile:
+        lstVals = line.split()
+        if len(lstVals) > 1:
+            # dataD[int(lstVals[0])]=[int(float(lstVals[1])*10000),int(float(lstVals[2])*10000)]
+            # listData.append([int(float(lstVals[1])*10000),int(float(lstVals[2])*10000)])
+            dataD[int(lstVals[0])] = [float(lstVals[1]), float(lstVals[2])]
+            listData.append([float(lstVals[1]), float(lstVals[2])])
+
+    # dataD=[]
+    # listData=[[10,10],[8,8],[5,5],[6,6],[12,12],[2,2]]
+    print(listData[:1])
+    start = time.time()
+    TSPMatrix = []
+    for row in range(len(listData)):
+        r = []
+        # for col in range(row,len(listData)):
+        for col in range(len(listData)):
+            # print((listData[row][0]-listData[col][0])**2)
+            d = round(
+                (math.sqrt((listData[row][0] - listData[col][0]) ** 2 + (listData[row][0] - listData[col][0]) ** 2)), 2)
+            print(d)
+            r.append(d)
+        TSPMatrix.append(r)
+        if row % 1000 == 0:
+            print(row, time.time() - start)
+    return sys.getsizeof(dataD), sys.getsizeof(listData), TSPMatrix
 
 
 class GA:
 
-    def __init__(self, cityNames, cityDistances, populationSize, crossoverRate, mutationRate, twoPointCrossover=False):
-        self.cityNames = cityNames
+    def __init__(self,  cityDistances, populationSize, crossoverRate, mutationRate, twoPointCrossover=False):
         self.cityDistances = cityDistances
 
         self.mutationRate = mutationRate
@@ -24,7 +61,7 @@ class GA:
         self.avgFitnesses = []
 
         for _ in range(self.populationSize):
-            self.currentGen.append(path(len(self.cityNames)))
+            self.currentGen.append(path(len(self.cityDistances)))
 
     def converge(self, maxGens=1000):
         while self.generation < maxGens:
@@ -87,12 +124,12 @@ class GA:
         if maleBaby[0] != 0 or femaleBaby[0] != 0:
             print("First city is not Houston")
 
-        return path(len(self.cityNames), maleBaby), path(len(self.cityNames), femaleBaby)
+        return path(len(self.cityDistances), maleBaby), path(len(self.cityDistances), femaleBaby)
 
     def binaryTournament(self):
         candidate1, candidate2 = self.currentGen[random.randrange(0, len(self.currentGen))], \
                                  self.currentGen[random.randrange(0, len(self.currentGen))]
-        if candidate1.fitness(self.cityDistances) > candidate2.fitness(self.cityDistances):
+        if candidate1.fitness(self.cityDistances) < candidate2.fitness(self.cityDistances):
             return candidate1
         else:
             return candidate2
@@ -133,6 +170,7 @@ class path:
             city = self.genes[i]
             nextCity = self.genes[(i + 1) % len(self.genes)]
             sum += cityDistances[city][nextCity]
+        # print(1/sum*100000)
         return sum
 
     def mutate(self, rate):
@@ -147,13 +185,16 @@ class path:
         self.genes[chromosome2] = tmp
 
 
-cityNames = ["Houston", "Dallas", "Austin", "Abilene", "Waco"]
-cityDistances = [[0, 241, 162, 351, 183],
-                 [241, 0, 202, 186, 97],
-                 [162, 202, 0, 216, 106],
-                 [351, 186, 216, 0, 186],
-                 [183, 97, 106, 186, 0]]
+# cityNames = ["Houston", "Dallas", "Austin", "Abilene", "Waco"]
+# cityDistances = [[0, 241, 162, 351, 183],
+#                  [241, 0, 202, 186, 97],
+#                  [162, 202, 0, 216, 106],
+#                  [351, 186, 216, 0, 186],
+#                  [183, 97, 106, 186, 0]]
 
-test = GA(cityNames, cityDistances, 50, 70, 1)
+szD, szL, cityDistances = processTour("wi29.tsp", 7)
+
+
+test = GA(cityDistances, 50, 90, 1)
 test.converge(1000)
 test.displayGraph()
