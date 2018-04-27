@@ -4,3 +4,4 @@ venv/*
 CostGraphs/
 ga/*.p
 ga/*.png
+NeuralNet/__pycache__/

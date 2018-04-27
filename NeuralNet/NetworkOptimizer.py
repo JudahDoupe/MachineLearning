@@ -1,8 +1,7 @@
-from NeuralNetwork import *
-from NormalizedData import *
+from NeuralNet.NeuralNetwork import *
 import operator
 import matplotlib.patches as mpatches
-
+from NeuralNet.NormalizedData import *
 
 class NetworkOptimizer:
 
