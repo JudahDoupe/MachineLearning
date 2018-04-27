@@ -5,7 +5,7 @@ import matplotlib.patches as mpatches
 import math
 import sys
 import time
-
+import pickle
 
 
 def processTour(fileName, numPreLines):
@@ -44,7 +44,7 @@ def processTour(fileName, numPreLines):
 
 class GA:
 
-    def __init__(self,  cityDistances, populationSize, crossoverRate, mutationRate, twoPointCrossover=False):
+    def __init__(self, cityDistances, populationSize, crossoverRate, mutationRate, twoPointCrossover=False):
         self.cityDistances = cityDistances
 
         self.mutationRate = mutationRate
@@ -64,7 +64,10 @@ class GA:
             self.currentGen.append(path(len(self.cityDistances)))
 
     def converge(self, maxGens=1000):
+        gens = 0
+        start = time.time()
         while self.generation < maxGens:
+            gens = gens + 1
             sumFitness = 0
             for _ in range(self.populationSize // 2):
                 male = self.binaryTournament()
@@ -85,15 +88,16 @@ class GA:
             self.generation += 1
             self.generations.append(self.generation)
             self.avgFitnesses.append(sumFitness // self.populationSize)
+            print("{0} generation out of {1}. It look {2:.2f} seconds ".format(gens, maxGens, (time.time() - start)))
 
     def crossover(self, male, female):
         if self.crossoverRate < random.randrange(0, 100):
             return male, female
 
-        idx = random.randrange(1,len(male.genes))
+        idx = random.randrange(1, len(male.genes))
 
-        maleBaby = [0] + ([-1] * (len(male.genes)-1))
-        femaleBaby = [0] + ([-1] * (len(male.genes)-1))
+        maleBaby = [0] + ([-1] * (len(male.genes) - 1))
+        femaleBaby = [0] + ([-1] * (len(male.genes) - 1))
 
         for i in range(idx, len(male.genes)):
             maleBaby[i] = female.genes[i]
@@ -158,11 +162,10 @@ class path:
 
     def initGenes(self, numCities):
         genes = []
-        for i in range(1,numCities):
+        for i in range(1, numCities):
             genes.append(i)
         random.shuffle(genes)
         self.genes = [0] + genes
-
 
     def fitness(self, cityDistances):
         sum = 0
@@ -192,9 +195,13 @@ class path:
 #                  [351, 186, 216, 0, 186],
 #                  [183, 97, 106, 186, 0]]
 
-szD, szL, cityDistances = processTour("wi29.tsp", 7)
+# szD, szL, cityDistances = processTour("wi29.tsp", 7)
 
-
+print("Loading data from pickle file")
+cityDistances = pickle.load(open("sw24978.p", "rb"))
+print("Data Loaded")
 test = GA(cityDistances, 50, 90, 1)
-test.converge(1000)
+start = time.time()
+test.converge(200)
+print("Elapsed time: {0:.2f} minutes".format((time.time() - start) / 60))
 test.displayGraph()
