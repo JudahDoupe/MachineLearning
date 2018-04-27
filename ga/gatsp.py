@@ -6,40 +6,8 @@ import math
 import sys
 import time
 import pickle
+from tqdm import tqdm
 
-
-def processTour(fileName, numPreLines):
-    infile = open(fileName, "r")
-    dataD = {}
-    listData = []
-    for i in range(numPreLines):
-        infile.readline()
-    for line in infile:
-        lstVals = line.split()
-        if len(lstVals) > 1:
-            # dataD[int(lstVals[0])]=[int(float(lstVals[1])*10000),int(float(lstVals[2])*10000)]
-            # listData.append([int(float(lstVals[1])*10000),int(float(lstVals[2])*10000)])
-            dataD[int(lstVals[0])] = [float(lstVals[1]), float(lstVals[2])]
-            listData.append([float(lstVals[1]), float(lstVals[2])])
-
-    # dataD=[]
-    # listData=[[10,10],[8,8],[5,5],[6,6],[12,12],[2,2]]
-    print(listData[:1])
-    start = time.time()
-    TSPMatrix = []
-    for row in range(len(listData)):
-        r = []
-        # for col in range(row,len(listData)):
-        for col in range(len(listData)):
-            # print((listData[row][0]-listData[col][0])**2)
-            d = round(
-                (math.sqrt((listData[row][0] - listData[col][0]) ** 2 + (listData[row][0] - listData[col][0]) ** 2)), 2)
-            print(d)
-            r.append(d)
-        TSPMatrix.append(r)
-        if row % 1000 == 0:
-            print(row, time.time() - start)
-    return sys.getsizeof(dataD), sys.getsizeof(listData), TSPMatrix
 
 
 class GA:
@@ -66,7 +34,7 @@ class GA:
     def converge(self, maxGens=1000):
         gens = 0
         start = time.time()
-        while self.generation < maxGens:
+        for _ in tqdm(range(maxGens)):
             gens = gens + 1
             sumFitness = 0
             for _ in range(self.populationSize // 2):
@@ -88,7 +56,7 @@ class GA:
             self.generation += 1
             self.generations.append(self.generation)
             self.avgFitnesses.append(sumFitness // self.populationSize)
-            print("{0} generation out of {1}. It look {2:.2f} seconds ".format(gens, maxGens, (time.time() - start)))
+            # print("{0} generation out of {1}. It look {2:.2f} seconds ".format(gens, maxGens, (time.time() - start)))
 
     def crossover(self, male, female):
         if self.crossoverRate < random.randrange(0, 100):
@@ -195,13 +163,18 @@ class path:
 #                  [351, 186, 216, 0, 186],
 #                  [183, 97, 106, 186, 0]]
 
-# szD, szL, cityDistances = processTour("wi29.tsp", 7)
+def loadPickleFile(inputFile):
+    print("Loading data from pickle file")
+    start = time.time()
+    data = pickle.load(open(inputFile, "rb"))
+    print("Data Loaded in {0:.2f}".format(time.time() - start))
+    return data
 
-print("Loading data from pickle file")
-cityDistances = pickle.load(open("sw24978.p", "rb"))
-print("Data Loaded")
-test = GA(cityDistances, 50, 90, 1)
+cityDistances = loadPickleFile("wi29.p")
+
+
+TSPGA = GA(cityDistances, 50, 90, 1)
 start = time.time()
-test.converge(200)
+TSPGA.converge(1000)
 print("Elapsed time: {0:.2f} minutes".format((time.time() - start) / 60))
-test.displayGraph()
+TSPGA.displayGraph()
