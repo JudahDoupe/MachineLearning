@@ -1,4 +1,4 @@
-# MachineLearning SYS403
+# Machine Learning SYS403
 All of the project work that was done for our Spring 2018 Machine Learning Class.
 Colaborators include Judah Doupe, Andrew Jackson, and Kyle Shelton.
 
