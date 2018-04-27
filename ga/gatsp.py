@@ -141,7 +141,6 @@ class path:
             city = self.genes[i]
             nextCity = self.genes[(i + 1) % len(self.genes)]
             sum += cityDistances[city][nextCity]
-        # print(1/sum*100000)
         return sum
 
     def mutate(self, rate):

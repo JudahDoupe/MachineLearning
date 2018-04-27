@@ -32,14 +32,7 @@ def processTour(fileName, numPreLines):
 
 
 szD, szL, tsp = processTour("sw24978.tsp", 7)
-# pickle.dump(tsp, open("sw24978-INTS.p", "wb"))
-# print(os.path.getsize("sw24978-INTS.p"))
-# print(test)
+pickle.dump(tsp, open("sw24978-INTS.p", "wb"))
+print(os.path.getsize("sw24978-INTS.p"))
 
 
-# Code for outputting to text file.
-# outFile = open("matrix.txt", "w")
-# for row in range(len(tsp)):
-#     # outFile.write(str(tsp[row]).rjust(300)+"\n")
-#     outFile.write(str(tsp[row]) + "\n")
-# outFile.close()
