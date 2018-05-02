@@ -9,7 +9,6 @@ import pickle
 from tqdm import tqdm
 
 
-
 class GA:
 
     def __init__(self, cityDistances, populationSize, crossoverRate, mutationRate, twoPointCrossover=False):
@@ -45,8 +44,6 @@ class GA:
 
                 baby1.mutate(self.mutationRate)
                 baby2.mutate(self.mutationRate)
-                # print(baby1.genes)
-                # print(baby2.genes)
 
                 self.nextGen = self.nextGen + [baby1, baby2]
                 sumFitness += baby1.fitness(self.cityDistances) + baby2.fitness(self.cityDistances)
@@ -56,47 +53,43 @@ class GA:
             self.generation += 1
             self.generations.append(self.generation)
             self.avgFitnesses.append(sumFitness // self.populationSize)
-            # print("{0} generation out of {1}. It look {2:.2f} seconds ".format(gens, maxGens, (time.time() - start)))
+
 
     def crossover(self, male, female):
-        if self.crossoverRate < random.randrange(0, 100):
-            return male, female
+        positions = []
 
-        idx = random.randrange(1, len(male.genes))
+        twentyPercent = len(male.genes) * .2
+        fourtyPercent = len(male.genes) * .4
+        sixtyPercent = len(male.genes) * .6
 
-        maleBaby = [0] + ([-1] * (len(male.genes) - 1))
-        femaleBaby = [0] + ([-1] * (len(male.genes) - 1))
+        while len(positions) <= fourtyPercent:
+            position = random.randrange(1, len(male.genes))
+            if position not in positions:
+                positions.append(position)
+        positions.sort()
 
-        for i in range(idx, len(male.genes)):
-            maleBaby[i] = female.genes[i]
-            femaleBaby[i] = male.genes[i]
+        # positions = [1, 2, 5]
 
-        for i in range(1, idx):
-            mGene = male.genes[i]
-            while mGene in maleBaby:
-                mappedGene = male.genes[female.genes.index(male.genes[i])]
-                if mGene == mappedGene:
-                    mGene = random.randrange(1, len(male.genes))
-                else:
-                    mGene = mappedGene
-            maleBaby[i] = mGene
+        ofspring1 = self.ox2(male.genes, female.genes, positions)
+        ofspring2 = self.ox2(female.genes, male.genes, positions)
 
-            fGene = female.genes[i]
-            while fGene in femaleBaby:
-                mappedGene = female.genes[male.genes.index(female.genes[i])]
-                if fGene == mappedGene:
-                    fGene = random.randrange(1, len(male.genes))
-                else:
-                    fGene = mappedGene
-            femaleBaby[i] = fGene
+        return ofspring1, ofspring2
 
-        if len(femaleBaby) != len(set(femaleBaby)) or len(maleBaby) != len(set(maleBaby)):
-            print("There was a duplicate value")
+    def ox2(self, maleGenes, femaleGenes, malePositions):
 
-        if maleBaby[0] != 0 or femaleBaby[0] != 0:
-            print("First city is not Houston")
+        offspingGenes = femaleGenes[:]
+        femalePositions = []
+        crossoverGenes = []
+        for position in malePositions:
+            maleGene = maleGenes[position]
+            crossoverGenes.append(maleGene)
+            femalePositions.append(femaleGenes.index(maleGene))
 
-        return path(len(self.cityDistances), maleBaby), path(len(self.cityDistances), femaleBaby)
+        femalePositions.sort()
+        for i in range(len(femalePositions)):
+            offspingGenes[femalePositions[i]] = crossoverGenes[i]
+
+        return path(len(maleGenes), offspingGenes)
 
     def binaryTournament(self):
         candidate1, candidate2 = self.currentGen[random.randrange(0, len(self.currentGen))], \
@@ -115,8 +108,8 @@ class GA:
         axes.set_ylabel('Fitness')
         fig.suptitle('GA')
         fig.savefig('GA.png')
-        fig.show()
-        input("Press enter to close graph: ")
+        # fig.show()
+        # input("Press enter to close graph: ")
         plt.close(fig)
 
 
@@ -169,10 +162,11 @@ def loadPickleFile(inputFile):
     print("Data Loaded in {0:.2f}".format(time.time() - start))
     return data
 
+
 cityDistances = loadPickleFile("wi29.p")
 
 
-TSPGA = GA(cityDistances, 50, 90, 1)
+TSPGA = GA(cityDistances, 50, 50, 0)
 start = time.time()
 TSPGA.converge(1000)
 print("Elapsed time: {0:.2f} minutes".format((time.time() - start) / 60))
