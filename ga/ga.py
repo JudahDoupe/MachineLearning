@@ -62,7 +62,6 @@ def crossover(male, female, twoPoint = False):
     return individual(baby1), individual(baby2)
 
 
-
 def initPopulation(size):
     population = []
     for _ in range(size):

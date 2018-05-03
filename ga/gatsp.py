@@ -26,6 +26,8 @@ class GA:
         # graph stuff
         self.generations = []
         self.avgFitnesses = []
+        self.bestFitnesses = []
+        self.worstFitnesses = []
 
         for _ in range(self.populationSize):
             self.currentGen.append(path(len(self.cityDistances)))
@@ -36,31 +38,48 @@ class GA:
         for _ in tqdm(range(maxGens)):
             gens = gens + 1
             sumFitness = 0
+            bestFitIndividual = 0
+            worstFitIndividual = sys.maxsize
             for _ in range(self.populationSize // 2):
-                male = self.binaryTournament()
-                female = self.binaryTournament()
+                daddy = self.binaryTournament()
+                mommy = self.binaryTournament()
 
-                baby1, baby2 = self.crossover(male, female)
+                babyBoy, babyGirl = self.ox2Crossover(daddy, mommy)
 
-                baby1.mutate(self.mutationRate)
-                baby2.mutate(self.mutationRate)
+                babyBoy.mutate(self.mutationRate)
+                babyGirl.mutate(self.mutationRate)
 
-                self.nextGen = self.nextGen + [baby1, baby2]
-                sumFitness += baby1.fitness(self.cityDistances) + baby2.fitness(self.cityDistances)
+                self.nextGen = self.nextGen + [babyBoy, babyGirl]
+                b1f = babyBoy.fitness(self.cityDistances)
+                b2f = babyGirl.fitness(self.cityDistances)
+                sumFitness += b1f + b2f
+                if b1f > bestFitIndividual:
+                    bestFitIndividual = b1f
+                if b2f > bestFitIndividual:
+                    bestFitIndividual = b2f
+                if b1f < worstFitIndividual:
+                    worstFitIndividual = b1f
+                if b2f < worstFitIndividual:
+                    worstFitIndividual = b2f
 
             self.currentGen = self.nextGen
             self.nextGen = []
             self.generation += 1
             self.generations.append(self.generation)
             self.avgFitnesses.append(sumFitness // self.populationSize)
+            self.bestFitnesses.append(bestFitIndividual)
+            self.worstFitnesses.append(worstFitIndividual)
 
-
-    def crossover(self, male, female):
+    def ox2Crossover(self, male, female):
+        if random.randrange(0,100) > self.crossoverRate:
+            return male, female
         positions = []
 
+        tenPercent = len(male.genes) * .1
         twentyPercent = len(male.genes) * .2
         fourtyPercent = len(male.genes) * .4
         sixtyPercent = len(male.genes) * .6
+        nintyPercent = len(male.genes) * .9
 
         while len(positions) <= fourtyPercent:
             position = random.randrange(1, len(male.genes))
@@ -68,16 +87,17 @@ class GA:
                 positions.append(position)
         positions.sort()
 
-        # positions = [1, 2, 5]
+        offspring1 = self.ox2(male.genes, female.genes, positions)
+        offspring2 = self.ox2(female.genes, male.genes, positions)
 
-        ofspring1 = self.ox2(male.genes, female.genes, positions)
-        ofspring2 = self.ox2(female.genes, male.genes, positions)
+        if len(offspring1.genes) > len(set(offspring1.genes)) or len(offspring2.genes) > len(set(offspring2.genes)):
+            print("tour is invalid!")
 
-        return ofspring1, ofspring2
+        return offspring1, offspring2
 
     def ox2(self, maleGenes, femaleGenes, malePositions):
 
-        offspingGenes = femaleGenes[:]
+        offspringGenes = femaleGenes[:]
         femalePositions = []
         crossoverGenes = []
         for position in malePositions:
@@ -85,25 +105,79 @@ class GA:
             crossoverGenes.append(maleGene)
             femalePositions.append(femaleGenes.index(maleGene))
 
-        femalePositions.sort()
+        # femalePositions.sort()
         for i in range(len(femalePositions)):
-            offspingGenes[femalePositions[i]] = crossoverGenes[i]
+            offspringGenes[femalePositions[i]] = crossoverGenes[i]
 
-        return path(len(maleGenes), offspingGenes)
+        return path(len(maleGenes), offspringGenes)
+
+    def steveCrossover(self, male, female):
+        x = male.genes
+        y = female.genes
+        cityLen = len(self.cityDistances)
+        crossoverPoint = random.randint(cityLen // 2, cityLen - 1)
+        crossoverY = y[crossoverPoint:]
+        crossoverX = x[crossoverPoint:]
+        newX = x[:crossoverPoint] + crossoverY + x[crossoverPoint:]
+        newY = y[:crossoverPoint] + crossoverX + y[crossoverPoint:]
+        i = 0
+        xlen = len(newX)
+        ylen = len(newY)
+        crossoverPointInList = crossoverPoint
+        while i < xlen:
+            if i < crossoverPointInList:
+                if newX[i] in crossoverY:
+                    newX.pop(i)
+                    xlen -= 1
+                    crossoverPointInList -= 1
+                    i -= 1
+            elif i >= crossoverPointInList + len(crossoverY):
+                if newX[i] in crossoverY:
+                    newX.pop(i)
+                    xlen -= 1
+                    i -= 1
+            else:
+                i = crossoverPointInList + len(crossoverY) - 1
+            i += 1
+        i = 0
+        crossoverPointInList = crossoverPoint
+        while i < ylen:
+            if i < crossoverPointInList:
+                if newY[i] in crossoverX:
+                    newY.pop(i)
+                    ylen -= 1
+                    crossoverPointInList -= 1
+                    i -= 1
+            elif i >= crossoverPointInList + len(crossoverX):
+                if newY[i] in crossoverX:
+                    newY.pop(i)
+                    ylen -= 1
+                    i -= 1
+            else:
+                i = crossoverPointInList + len(crossoverX) - 1
+            i += 1
+        return path(cityLen,newX), path(cityLen,newY)
 
     def binaryTournament(self):
         candidate1, candidate2 = self.currentGen[random.randrange(0, len(self.currentGen))], \
                                  self.currentGen[random.randrange(0, len(self.currentGen))]
-        if candidate1.fitness(self.cityDistances) < candidate2.fitness(self.cityDistances):
+        fit1 = candidate1.fitness(self.cityDistances)
+        fit2 = candidate2.fitness(self.cityDistances)
+
+        if fit1 < fit2:
             return candidate1
         else:
             return candidate2
 
     def displayGraph(self):
         x = np.array(self.generations)
-        y = np.array(self.avgFitnesses)
+        avgFit = np.array(self.avgFitnesses)
+        bestFit = np.array(self.bestFitnesses)
+        worstFit = np.array(self.worstFitnesses)
         fig, axes = plt.subplots()
-        axes.plot(x, y, color='blue')
+        axes.plot(x, avgFit, color='blue')
+        axes.plot(x, bestFit, color='red')
+        axes.plot(x, worstFit, color='green')
         axes.set_xlabel('Generations')
         axes.set_ylabel('Fitness')
         fig.suptitle('GA')
@@ -137,7 +211,7 @@ class path:
         return sum
 
     def mutate(self, rate):
-        if rate < random.randrange(0, 100):
+        if random.randrange(0, 100) > rate:
             pass
 
         chromosome1 = random.randrange(1, len(self.genes))
@@ -164,10 +238,12 @@ def loadPickleFile(inputFile):
 
 
 cityDistances = loadPickleFile("wi29.p")
+populationSize = 500
+crossoverRate = 70
+mutationRate = 0
 
-
-TSPGA = GA(cityDistances, 50, 50, 0)
+TSPGA = GA(cityDistances, populationSize, crossoverRate, mutationRate)
 start = time.time()
-TSPGA.converge(1000)
+TSPGA.converge(1500)
 print("Elapsed time: {0:.2f} minutes".format((time.time() - start) / 60))
 TSPGA.displayGraph()

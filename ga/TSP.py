@@ -31,8 +31,8 @@ def processTour(fileName, numPreLines):
     return sys.getsizeof(dataD), sys.getsizeof(listData), TSPMatrix
 
 
-szD, szL, tsp = processTour("sw24978.tsp", 7)
-pickle.dump(tsp, open("sw24978-INTS.p", "wb"))
-print(os.path.getsize("sw24978-INTS.p"))
+szD, szL, tsp = processTour("uy734.tsp", 7)
+pickle.dump(tsp, open("uy734-INTS.p", "wb"))
+print(os.path.getsize("uy734-INTS.p"))
 
 
